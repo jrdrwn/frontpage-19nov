@@ -1,11 +1,21 @@
-import { copyFile, mkdir, stat } from "node:fs/promises";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Copy the front page image to the grader's output directory.
-const here = dirname(fileURLToPath(import.meta.url));
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-const source = join(here, "entry.png");
-await stat(source);
-await mkdir(outDir, { recursive: true });
-await copyFile(source, join(outDir, "entry.png"));
+// Locate the artwork that ships beside this entrypoint.
+const folder = dirname(fileURLToPath(import.meta.url));
+const artwork = join(folder, "entry.png");
+
+// Refuse to continue quietly when the artwork is absent.
+if (!existsSync(artwork)) {
+  console.error(`Missing source image: ${artwork}`);
+  process.exit(1);
+}
+
+// The harness tells us where finished work belongs; fall back to /output.
+const destinationFolder = process.env.MAKEFUN_OUTPUT_DIR || "/output";
+mkdirSync(destinationFolder, { recursive: true });
+
+const destination = join(destinationFolder, "entry.png");
+copyFileSync(artwork, destination);
+console.log(`Wrote ${destination}`);
